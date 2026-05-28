@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vroom Vision - Storefront Prototype</title>
+    <style>
+        /**
+         * ==========================================
+         * GLOBAL DESIGN TOKENS & PRODUCT GRID SYSTEM
+         * ==========================================
+         */
+        :root {
+          --surface-background: #121212;
+          --surface-card: #1e1e1e;
+          --accent-gold: #D4AF37;
+          --text-primary: #ffffff;
+          --text-muted: #aaaaaa;
+
+          /* Catalog Specific Color Enhancements */
+          --bg-deep-matte: #0a0a0a;
+          --bg-card-elevation: #141414;
+          --gold-primary: #D4AF37;
+          --gold-hover: #f1c40f;
+          --border-muted: #222222;
+          --font-title-white: #ffffff;
+          --font-body-gray: #8e8e93;
+        }
+
+        body {
+          margin: 0;
+          padding: 0;
+          background-color: var(--bg-deep-matte);
+        }
+
+        .catalog-wrapper {
+          background-color: var(--bg-deep-matte);
+          min-height: 100vh;
+          color: var(--font-title-white);
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* Explicit Mobile-First Layout Configuration */
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          padding: 16px;
+          background-color: var(--surface-background);
+        }
+
+        .search-sticky-header {
+          position: sticky;
+          top: 0;
+          z-index: 90;
+          background-color: rgba(10, 10, 10, 0.85);
+          backdrop-filter: blur(12px);
+          border-bottom: 1px solid var(--border-muted);
+          padding: 16px 16px 8px 16px;
+        }
+
+        .search-input-container input {
+          width: 100%;
+          background-color: var(--bg-card-elevation);
+          border: 1px solid var(--border-muted);
+          border-radius: 8px;
+          padding: 12px 16px;
+          color: var(--font-title-white);
+          font-size: 14px;
+          transition: border-color 0.2s ease;
+          box-sizing: border-box;
+        }
+
+        .search-input-container input:focus {
+          outline: none;
+          border-color: var(--gold-primary);
+        }
+
+        .category-scroll-nav {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding: 12px 0 4px 0;
+          scrollbar-width: none;
+        }
+
+        .category-scroll-nav::-webkit-scrollbar {
+          display: none;
+        }
+
+        .category-capsule {
+          flex: 0 0 auto;
+          background-color: var(--bg-card-elevation);
+          border: 1px solid var(--border-muted);
+          border-radius: 20px;
+          padding: 6px 16px;
+          color: var(--font-body-gray);
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .category-capsule.active {
+          background-color: var(--gold-primary);
+          border-color: var(--gold-primary);
+          color: var(--bg-deep-matte);
+          font-weight: 600;
+        }
+
+        .catalog-content {
+          padding: 16px;
+        }
+
+        .catalog-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 14px;
+        }
+
+        .product-card-frame {
+          background-color: var(--bg-card-elevation);
+          border: 1px solid var(--border-muted);
+          border-radius: 12px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .image-aspect-container {
+          position: relative;
+          width: 100%;
+          padding-top: 133.33%; /* 3:4 Aspect Ratio */
+          background-color: #1a1a1a;
+        }
+
+        .image-aspect-container img {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .badge-category-tag {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          background-color: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          padding: 2px 8px;
+          border-radius: 4px;
+          color: var(--gold-primary);
+          z-index: 2;
+        }
+
+        .product-metadata-block {
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+        }
+
+        .product-display-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--font-title-white);
+          margin: 0 0 4px 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .product-display-edition {
+          font-size: 11px;
+          color: var(--font-body-gray);
+          margin: 0 0 12px 0;
+        }
+
+        .purchase-action-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: auto;
+        }
+
+        .price-tag-value {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--gold-primary);
+        }
+
+        .cta-order-trigger {
+          background-color: transparent;
+          border: 1px solid var(--gold-primary);
+          color: var(--gold-primary);
+          font-size: 11px;
+          font-weight: 600;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .cta-order-trigger:active {
+          background-color: var(--gold-primary);
+          color: var(--bg-deep-matte);
+        }
+
+        @media screen and (min-width: 600px) {
+          .catalog-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media screen and (min-width: 1024px) {
+          .catalog-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        }
+
+        .fallback-empty-state {
+          text-align: center;
+          padding: 48px 24px;
+          color: var(--font-body-gray);
+        }
+
+        /* Modal Sheet Systems */
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: flex-end;
+          z-index: 1000;
+        }
+
+        .modal-sheet-bottom {
+          width: 100%;
+          background: var(--surface-card);
+          border-radius: 20px 20px 0 0;
+          padding: 24px;
+          box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+          animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          box-sizing: border-box;
+        }
+
+        .drag-handle {
+          width: 40px;
+          height: 4px;
+          background: #333333;
+          border-radius: 2px;
+          margin: 0 auto 16px auto;
+        }
+
+        .prototype-form label {
+          display: block;
+          font-size: 11px;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          letter-spacing: 1px;
+          margin-bottom: 6px;
+          margin-top: 14px;
+        }
+
+        .prototype-form input, 
+        .prototype-form select {
+          width: 100%;
+          background: var(--surface-background);
+          border: 1px solid #333333;
+          padding: 12px;
+          border-radius: 6px;
+          color: var(--text-primary);
+          font-size: 14px;
+          box-sizing: border-box;
+        }
+
+        .prototype-form input:focus {
+          border-color: var(--accent-gold);
+          outline: none;
+        }
+
+        .form-row-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 12px;
+                    box-sizing: border-box;
+        }
+
+        .validation-banner {
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid #ef4444;
+          color: #f87171;
+          padding: 10px;
+          border-radius: 6px;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+
+        .action-btn-primary {
+          width: 100%;
+          background: linear-gradient(135deg, var(--accent-gold) 0%, #AA820A 100%);
+          color: var(--surface-background);
+          font-weight: 700;
+          padding: 14px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+        }
+
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script>
+        /**
+         * ==========================================
+         * 1. DATA CONTRACTS & VALIDATION RULES
+         * ==========================================
+         */
+        const CategoryTypes = ['supercars', 'anime', 'sports', 'lifestyle'];
+        const FrameSizes = ['A3', 'A4'];
+        const OrderStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+
+        function validateProductSchema(product) {
+            const requiredKeys = ['id', 'title', 'edition', 'category', 'imageUrl', 'slug', 'pricing', 'isAvailable'];
+            return requiredKeys.every(key => key in product);
+        }
+
+        /**
+         * ==========================================
+         * 2. STATE STORES & IN-MEMORY DATA LAYER
+         * ==========================================
+         */
+        const MOCK_PRODUCTS = [
+          {
+            id: "prod_vroom_001",
+            title: "Classic 350 Reborn",
+            edition: "Classic 350 Edition",
+            category: "supercars",
+            imageUrl: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=600", 
+            slug: "classic-350-bullet-poster",
+            pricing: { basePrice: 450, currency: "NPR" },
+            isAvailable: true
+          },
+          {
+            id: "prod_vroom_002",
+            title: "Tanjiro Kamado",
+            edition: "Demon Slayer Edition",
+            category: "anime",
+            imageUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&q=80&w=600",
+            slug: "demon-slayer-tanjiro",
+            pricing: { basePrice: 450, currency: "NPR" },
+            isAvailable: true
+          },
+          {
+            id: "prod_vroom_003",
+            title: "FC Barcelona",
+            edition: "2026 Supercopa Edition",
+            category: "sports",
+            imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=600",
+            slug: "fc-barcelona-supercopa",
+            pricing: { basePrice: 450, currency: "NPR" },
+            isAvailable: true
+          }
+        ];
+
+        const MOCK_DB_ORDERS = [];
+        
+        const MOCK_RATE_LIMITER_STORE = {
+          requestHistory: [],
+          WINDOW_MS: 15 * 60 * 1000, 
+          MAX_REQUESTS: 5
+        };
+
+        /**
+         * ==========================================
+         * 3. PURE BUSINESS UTILITIES / SERVICE LAYER
+         * ==========================================
+         */
+        const compileWhatsAppGatewayUri = (product, payload) => {
+          const TARGET_PHONE = "9779806018899"; 
+          
+          const title = product.title || "Unknown Poster";
+          const edition = product.edition || "Standard";
+          const basePrice = product.pricing.basePrice || 0;
+          const currency = product.pricing.currency || "NPR";
+          
+          const customerName = (payload.customerName || "").trim();
+          const phoneNumber = (payload.phoneNumber || "").trim();
+          const deliveryLocation = (payload.deliveryLocation || "").trim();
+          const selectedSize = payload.selectedSize || "A4";
+          const quantity = payload.quantity || 1;
+
+          const orderManifest = [
+            `🚨 *NEW ORDER DETECTED* 🚨`,
+            `--------------------------------`,
+            `📦 *Product:* ${title} (${edition})`,
+            `📏 *Frame Size:* ${selectedSize}`,
+            `🔢 *Quantity:* ${quantity}`,
+            `💰 *Estimated Total:* ${basePrice * quantity} ${currency}`,
+            `--------------------------------`,
+            `👤 *Customer Name:* ${customerName}`,
+            `📞 *Contact Number:* ${phoneNumber}`,
+            `📍 *Delivery Destination:* ${deliveryLocation}`,
+            `--------------------------------`,
+            `⚠️ _Please confirm stock availability to finalize order_`
+          ].join('\n');
+
+          return `https://wa.me/${TARGET_PHONE}?text=${encodeURIComponent(orderManifest)}`;
+        };
+
+        const evaluateOrderRateLimit = () => {
+          const now = Date.now();
+          MOCK_RATE_LIMITER_STORE.requestHistory = MOCK_RATE_LIMITER_STORE.requestHistory.filter(
+            timestamp => (now - timestamp) < MOCK_RATE_LIMITER_STORE.WINDOW_MS
+          );
+          if (MOCK_RATE_LIMITER_STORE.requestHistory.length >= MOCK_RATE_LIMITER_STORE.MAX_REQUESTS) {
+            return { isLimited: true, status: 429, response: { success: false, error: "Too many attempts. Try again in 15 minutes." } };
+          }
+          MOCK_RATE_LIMITER_STORE.requestHistory.push(now);
+          return { isLimited: false };
+        };
+
+        const createStorefrontOrderMockAPI = async (reqBody) => {
+          const rateLimitCheck = evaluateOrderRateLimit();
+          if (rateLimitCheck.isLimited) return { status: rateLimitCheck.status, response: rateLimitCheck.response };
+
+          const { customerName, phoneNumber, deliveryLocation, productId, selectedSize, quantity } = reqBody;
+          if (!customerName || !phoneNumber || !deliveryLocation || !productId || !quantity) {
+             return { status: 400, response: { success: false, error: "Missing mandatory fields." } };
+          }
+
+          const product = MOCK_PRODUCTS.find(p => p.id === productId);
+          if (!product) return { status: 422, response: { success: false, error: "Unavailable." } };
+
+          const newOrderRecord = {
+            id: "order_" + Math.random().toString(36).substr(2, 9),
+            customer_name: customerName,
+            phone_number: phoneNumber,
+            delivery_location: deliveryLocation,
+            target_product_id: productId,
+            selected_size: selectedSize,
+            quantity: quantity,
+            total_price: product.pricing.basePrice * quantity,
+            order_status: 'pending',
+            created_at: new Date().toISOString()
+          };
+
+          MOCK_DB_ORDERS.push(newOrderRecord);
+          return { status: 201, response: { success: true, data: newOrderRecord } };
+        };
+
+        /**
+         * ==========================================
+         * 4. CONTROLLER & PRESENTATION LAYER
+         * ==========================================
+         */
+        const ProductCard = ({ data }) => {
+            return `
+              <div class="product-card-frame" id="card_${data.id}">
+                <div class="image-aspect-container">
+                  <span class="badge-category-tag">${data.category}</span>
+                  <img src="${data.imageUrl}" alt="${data.title}" />
+                </div>
+                <div class="product-metadata-block">
+                  <h3 class="product-display-title">${data.title}</h3>
+                  <span class="product-display-edition">${data.edition}</span>
+                  <div class="purchase-action-row">
+                    <span class="price-tag-value">${data.pricing.basePrice} ${data.pricing.currency}</span>
+                    <button class="cta-order-trigger" onclick="GlobalAppController.openCheckout('${data.id}')">
+                      ORDER NOW
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+        };
+
+        const EmptyStateNotice = ({ query }) => {
+            return `
+              <div class="fallback-empty-state">
+                <p>No premium designs found matching "${query}".</p>
+              </div>
+            `;
+        };
+
+        const ProductCatalog = {
+          state: { activeCategory: 'all', searchFilter: '' },
+          categories: [
+            { id: 'all', label: 'All Collection' },
+            { id: 'supercars', label: 'Supercars' },
+            { id: 'anime', label: 'Anime Art' },
+            { id: 'sports', label: 'Sports' }
+          ],
+          getOptimizedCatalog: () => {
+            return MOCK_PRODUCTS.filter((item) => {
+              const matchCategory = ProductCatalog.state.activeCategory === 'all' || item.category === ProductCatalog.state.activeCategory;
+              const normalizeSearch = ProductCatalog.state.searchFilter.toLowerCase().trim();
+              const matchSearch = item.title.toLowerCase().includes(normalizeSearch) || item.edition.toLowerCase().includes(normalizeSearch);
+              return matchCategory && matchSearch;
+            });
+          }
+        };
+
+        const OrderModalPrototype = {
+          state: {
+            formData: { customerName: '', phoneNumber: '', deliveryLocation: '', selectedSize: 'A4', quantity: 1 },
+            validationError: '',
+            activeProductId: null
+          }
+        };
+
+        const App = {
+          render: () => {
+            return `
+              <div class="catalog-wrapper">
+                <header style="text-align: center; padding: 24px 0 12px 0; background: #0a0a0a;">
+                  <h1 style="color: #D4AF37; margin: 0; font-size: 20px; letter-spacing: 2px; text-transform: uppercase;">Vroom Vision</h1>
+                  <p style="color: #8e8e93; margin: 4px 0 0 0; font-size: 11px;">Premium Framed Poster Hub</p>
+                </header>
+                
+                <section class="search-sticky-header">
+                  <div class="search-input-container">
+                    <input type="text" id="catalog-search-field" placeholder="Search posters..." oninput="GlobalAppController.handleSearch(this.value)" />
+                  </div>
+                  <nav class="category-scroll-nav" id="category-capsule-container"></nav>
+                </section>
+
+                <main class="catalog-content">
+                  <div class="catalog-grid" id="catalog-products-grid"></div>
+                </main>
+
+                <div id="checkout-modal-portal"></div>
+              </div>
+            `;
+          }
+        };
+
+        const GlobalAppController = {
+          init: () => {
+            document.getElementById('root').innerHTML = App.render();
+            GlobalAppController.renderCategories();
+            GlobalAppController.renderCatalog();
+          },
+
+          renderCategories: () => {
+            const container = document.getElementById('category-capsule-container');
+            container.innerHTML = ProductCatalog.categories.map(cat => {
+              const isActive = ProductCatalog.state.activeCategory === cat.id ? 'active' : '';
+              return `<span class="category-capsule ${isActive}" onclick="GlobalAppController.selectCategory('${cat.id}')">${cat.label}</span>`;
+            }).join('');
+          },
+
+          renderCatalog: () => {
+            const grid = document.getElementById('catalog-products-grid');
+            const filteredItems = ProductCatalog.getOptimizedCatalog();
+
+            if (filteredItems.length === 0) {
+              grid.innerHTML = EmptyStateNotice({ query: ProductCatalog.state.searchFilter });
+              grid.style.display = 'block';
+            } else {
+              grid.style.display = 'grid';
+              grid.innerHTML = filteredItems.map(item => ProductCard({ data: item })).join('');
+            }
+          },
+
+                    selectCategory: (categoryId) => {
+            ProductCatalog.state.activeCategory = categoryId;
+            GlobalAppController.renderCategories();
+            GlobalAppController.renderCatalog();
+          },
+
+          handleSearch: (val) => {
+            ProductCatalog.state.searchFilter = val;
+            GlobalAppController.renderCatalog();
+          },
+
+          openCheckout: (productId) => {
+            OrderModalPrototype.state.activeProductId = productId;
+            OrderModalPrototype.state.validationError = '';
+            OrderModalPrototype.state.formData = { customerName: '', phoneNumber: '', deliveryLocation: '', selectedSize: 'A4', quantity: 1 };
+            GlobalAppController.renderModal();
+          },
+
+          closeCheckout: () => {
+            OrderModalPrototype.state.activeProductId = null;
+            document.getElementById('checkout-modal-portal').innerHTML = '';
+          },
+
+          updateForm: (field, value) => {
+            OrderModalPrototype.state.formData[field] = value;
+            if (field === 'quantity') {
+              const prod = MOCK_PRODUCTS.find(p => p.id === OrderModalPrototype.state.activeProductId);
+              if(prod) {
+                document.getElementById('modal-calculated-total').innerText = `${prod.pricing.basePrice * value} ${prod.pricing.currency}`;
+              }
+            }
+          },
+
+          renderModal: () => {
+            const portal = document.getElementById('checkout-modal-portal');
+            const prod = MOCK_PRODUCTS.find(p => p.id === OrderModalPrototype.state.activeProductId);
+            if (!prod) return;
+
+            const fd = OrderModalPrototype.state.formData;
+            const errorBanner = OrderModalPrototype.state.validationError ? `<div class="validation-banner">${OrderModalPrototype.state.validationError}</div>` : '';
+
+            portal.innerHTML = `
+              <div class="modal-backdrop" onclick="if(event.target === this) GlobalAppController.closeCheckout()">
+                <div class="modal-sheet-bottom">
+                  <div class="drag-handle"></div>
+                  <h2 style="margin: 0 0 4px 0; color: var(--text-primary); font-size: 18px;">Configure Your Order</h2>
+                  <p style="margin: 0 0 16px 0; color: var(--text-muted); font-size: 12px;">${prod.title}</p>
+                  ${errorBanner}
+                  <div class="prototype-form">
+                    <label>Full Name</label>
+                    <input type="text" placeholder="Your Name" oninput="GlobalAppController.updateForm('customerName', this.value)" />
+
+                    <label>Phone Number</label>
+                    <input type="tel" placeholder="98XXXXXXXX" oninput="GlobalAppController.updateForm('phoneNumber', this.value)" />
+
+                    <label>Delivery Address</label>
+                    <input type="text" placeholder="City, Ward No." oninput="GlobalAppController.updateForm('deliveryLocation', this.value)" />
+
+                    <div class="form-row-grid">
+                      <div>
+                        <label>Size</label>
+                        <select onchange="GlobalAppController.updateForm('selectedSize', this.value)">
+                          <option value="A4">A4 Frame</option>
+                          <option value="A3">A3 Frame</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label>Quantity</label>
+                        <input type="number" min="1" value="1" oninput="GlobalAppController.updateForm('quantity', parseInt(this.value) || 1)" />
+                      </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 16px 0;">
+                      <span style="color: var(--text-muted); font-size: 13px;">Total:</span>
+                      <span id="modal-calculated-total" style="color: var(--accent-gold); font-size: 18px; font-weight: 700;">${prod.pricing.basePrice * fd.quantity} ${prod.pricing.currency}</span>
+                    </div>
+
+                    <button class="action-btn-primary" onclick="GlobalAppController.submitOrder()">CONFIRM & SEND VIA WHATSAPP</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          },
+
+          submitOrder: async () => {
+            const prod = MOCK_PRODUCTS.find(p => p.id === OrderModalPrototype.state.activeProductId);
+            const fd = OrderModalPrototype.state.formData;
+            const phoneRegex = /^(98|97)\d{8}$/;
+
+            if (!fd.customerName.trim() || !fd.deliveryLocation.trim()) {
+              OrderModalPrototype.state.validationError = 'All fields are mandatory.';
+              GlobalAppController.renderModal();
+              return;
+            }
+            if (!phoneRegex.test(fd.phoneNumber.trim())) {
+              OrderModalPrototype.state.validationError = 'Provide a valid mobile number starting with 98 or 97.';
+              GlobalAppController.renderModal();
+              return;
+            }
+
+            const apiResponse = await createStorefrontOrderMockAPI({
+              customerName: fd.customerName,
+              phoneNumber: fd.phoneNumber,
+              deliveryLocation: fd.deliveryLocation,
+              productId: prod.id,
+              selectedSize: fd.selectedSize,
+              quantity: fd.quantity
+            });
+
+            if (apiResponse.status === 201) {
+              const targetUrl = compileWhatsAppGatewayUri(prod, fd);
+              window.open(targetUrl, '_blank');
+              GlobalAppController.closeCheckout();
+            } else {
+              OrderModalPrototype.state.validationError = apiResponse.response.error;
+              GlobalAppController.renderModal();
+            }
+          }
+        };
+
+        window.addEventListener('DOMContentLoaded', GlobalAppController.init);
+    </script>
+</body>
+</html>
